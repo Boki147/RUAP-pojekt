@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Predviđanje osobnosti — PersonaLab</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Plotly.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-logo">Persona<span>Lab</span></div>
+    <ul class="nav-links">
+      <li><a href="index.html">Članak</a></li>
+      <li><a href="predict.html" class="active">Predviđanje</a></li>
+    </ul>
+  </nav>
+
+  <!-- Two-column layout -->
+  <div class="predict-page">
+
+    <!-- ═══ LEFT — Forma ══════════════════════════════════════════════ -->
+    <div class="form-panel">
+      <h2>Analiza osobnosti</h2>
+      <p class="form-subtitle">
+        Popuni polja bazirana na Kaggle datasetu <em>Introvert vs Extrovert Behavior</em>.<br>
+        Azure ML model predvidjet će tvoj tip ličnosti. Unos se automatski sprema u bazu.
+      </p>
+
+      <form id="predict-form">
+
+        <!-- 1. Vrijeme provedeno samo/a -->
+        <div class="form-group">
+          <label for="time_spent_alone">
+            Vrijeme sami/e dnevno
+            <span class="label-desc">(prosječno u satima, 0–11)</span>
+          </label>
+          <input type="range" id="time_spent_alone" min="0" max="11" step="0.5" value="5" />
+          <div class="range-row">
+            <span>0h</span>
+            <span class="range-value" id="time_spent_alone_val">5</span>
+            <span>11h</span>
+          </div>
+        </div>
+
+        <!-- 2. Strah od pozornice -->
+        <div class="form-group">
+          <label>Strah od pozornice / javnog nastupa</label>
+          <div class="toggle-group" id="stage_fear_group">
+            <button type="button" class="toggle-btn" data-value="1">Da, imam</button>
+            <button type="button" class="toggle-btn active" data-value="0">Nemam straha</button>
+          </div>
+        </div>
+
+        <!-- 3. Socijalni događaji -->
+        <div class="form-group">
+          <label for="social_event_attend">
+            Soc. događaji tjedno
+            <span class="label-desc">(0 = nikad, 10 = svaki dan)</span>
+          </label>
+          <input type="range" id="social_event_attend" min="0" max="10" step="0.5" value="4" />
+          <div class="range-row">
+            <span>Nikad</span>
+            <span class="range-value" id="social_event_attend_val">4</span>
+            <span>Svaki dan</span>
+          </div>
+        </div>
+
+        <!-- 4. Izlasci van -->
+        <div class="form-group">
+          <label for="going_outside">
+            Izlasci van tjedno
+            <span class="label-desc">(0 = nikad, 7 = svaki dan)</span>
+          </label>
+          <input type="range" id="going_outside" min="0" max="7" step="0.5" value="3" />
+          <div class="range-row">
+            <span>Nikad</span>
+            <span class="range-value" id="going_outside_val">3</span>
+            <span>Svaki dan</span>
+          </div>
+        </div>
+
+        <!-- 5. Iscrpljenost -->
+        <div class="form-group">
+          <label>Osjećaš li se iscrpljeno/a nakon socijalizacije?</label>
+          <div class="toggle-group" id="drained_group">
+            <button type="button" class="toggle-btn active" data-value="1">Da, jako</button>
+            <button type="button" class="toggle-btn" data-value="0">Ne posebno</button>
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <!-- 6. Prijatelji -->
+        <div class="form-group">
+          <label for="friends_circle_size">
+            Broj bliskih prijatelja
+            <span class="label-desc">(0–15+)</span>
+          </label>
+          <input type="range" id="friends_circle_size" min="0" max="15" step="1" value="5" />
+          <div class="range-row">
+            <span>0</span>
+            <span class="range-value" id="friends_circle_size_val">5</span>
+            <span>15+</span>
+          </div>
+        </div>
+
+        <!-- 7. Objave -->
+        <div class="form-group">
+          <label for="post_frequency">
+            Objave na soc. mrežama tjedno
+            <span class="label-desc">(0 = nikad, 10 = višestruko dnevno)</span>
+          </label>
+          <input type="range" id="post_frequency" min="0" max="10" step="0.5" value="3" />
+          <div class="range-row">
+            <span>Nikad</span>
+            <span class="range-value" id="post_frequency_val">3</span>
+            <span>Jako često</span>
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">
+          Otkrij svoju osobnost →
+        </button>
+
+      </form>
+
+      <!-- Rezultat -->
+      <div id="result-card" class="result-card" style="display:none;"></div>
+
+    </div>
+    <!-- End left panel -->
+
+
+    <!-- ═══ RIGHT — Grafikoni ══════════════════════════════════════════ -->
+    <div class="charts-panel">
+
+      <div>
+        <h3>📊 Statistike iz baze podataka</h3>
+        <p class="chart-label">Generirano pomoću Pandas + Plotly Express · Auto-osvježava se</p>
+        <div class="stats-row" id="summary-stats">
+          <div class="stat-pill">Ukupno: <span id="stat-total">—</span></div>
+          <div class="stat-pill">🌿 Introverti: <span id="stat-intro">—</span></div>
+          <div class="stat-pill">🌟 Ekstroverti: <span id="stat-ext">—</span></div>
+        </div>
+      </div>
+
+      <!-- Graf 1: Pie distribucija -->
+      <div class="chart-card">
+        <h3>Distribucija predikcija</h3>
+        <p class="chart-label">Udio introverata vs ekstroverata</p>
+        <div id="plotly-dist" class="plotly-container"></div>
+      </div>
+
+      <!-- Graf 2: Bar prosječnih značajki -->
+      <div class="chart-card">
+        <h3>Prosječne vrijednosti značajki</h3>
+        <p class="chart-label">Usporedba po tipu ličnosti</p>
+        <div id="plotly-avg" class="plotly-container tall"></div>
+      </div>
+
+      <!-- Graf 3: Line timeline -->
+      <div class="chart-card">
+        <h3>Zadnje predikcije</h3>
+        <p class="chart-label">Kronološki prikaz posljednjih 30 unosa</p>
+        <div id="plotly-time" class="plotly-container"></div>
+      </div>
+
+    </div>
+    <!-- End right panel -->
+
+  </div>
+
+  <footer>
+    <p>PersonaLab &nbsp;·&nbsp; Backend: Flask + SQLite + Pandas &nbsp;·&nbsp;
+    Vizualizacije: Plotly Express &nbsp;·&nbsp;
+    ML: Azure Managed Endpoint &nbsp;·&nbsp;
+    Dataset: <a href="https://www.kaggle.com/datasets/rakeshkapilavai/extrovert-vs-introvert-behavior-data" target="_blank">Kaggle</a></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
